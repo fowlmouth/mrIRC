@@ -1,0 +1,334 @@
+'.-'-. Description .-'-.'
+
+mrIRC is an absolutely minimalist approach to a Ruby IRC framework, it doesn't
+even attempt to automate much of anything beyond ping events and event handling
+is done simply by defining sub-class methods.
+
+'.-'-. The Basics .-'-.'
+
+The minimum you need to get mrIRC running is a script that looks like this:
+
+----->8
+
+require 'mrIRC'
+
+class ExampleBot < MRIRC::IRC
+end
+
+bot = TestBot.new
+bot.connect("your.irc.server")
+bot.run
+
+----->8
+
+Of course, this bot won't do anything beyond maintaining a connection to the
+server. But the essential items are:
+
+  * A class derived from MRIRC::IRC, which allows it to interact with IRC
+  * One or more instances of that class
+  * A call to IRC::connect()
+  
+run() is just a helper function for very simple scripts that doesn't return
+until the connection dies -- thereby preventing the main thread from simply
+exiting before the connection can even take place.
+
+'.-'-. Capturing and Responding to Events .-'-.'
+
+In order for a script that utilizes IRC to be useful it has to *do something*.
+To interact with IRC using mrIRC you need to do two things: Capture an event
+and respond to it.
+
+To capture an event you simply define an appropriately named method in your
+derived class with a single parameter -- which will point to an instance of the
+IRCEventData class explained later.
+
+----->8
+
+class ExampleBot < MRIRC::IRC
+	def on_welcome(event)
+		print event.text
+	end
+end
+
+----->8
+
+Each method consists of the prefix ("on_") and the name or numeric ID of the
+event you want to capture. For a list of possible names see the Events
+section.
+
+Don't like or can't use the prefix "on_"? Just set the instance variable
+method_prefix (see also the Options section):
+
+----->8
+
+class ExampleBot < MRIRC::IRC
+	def irc_welcome(event)
+		print event.text
+	end
+end
+
+bot = ExampleBot.new
+bot.method_prefix = "irc_"
+
+----->8
+
+To respond to an event you can use the built-in methods of IRC to communicate
+with the server and other users on it:
+
+----->8
+
+class ExampleBot < MRIRC::IRC
+	def on_join(event)
+		message(event.channel, "Hi guys!") if (event.nick == self.nick)
+	end
+end
+
+----->8
+
+'.-'-. IRCEventData .-'-.'
+
+The IRCEventData object is how mrIRC tells methods about the event that's
+occurring. It has the following read/write attributes:
+
+command     : The IRC command name of the event, e.g. JOIN, PRIVMSG, NICK
+numeric     : The numeric ID of the event. Set to 0 for "special" events
+source      : The "source" of the event. Varies from event to event, but is
+              almost always a user identifier (Nick!Nick@host). Represents
+			  e.g. The old name in a nick change event, who said something
+			  in a channel message, who joined/left a channel, etc.
+source_nick : The nickname part of source only (Nick as opposed to
+              Nick!Nick@host)
+source_host : The hostname part of source only (Nick@host)
+nick        : The nickname that generated the event, usually equivalent to
+              source_nick
+target      : The "target" of the event. Varies like source, but generally
+              represents the destination of the action. e.g. The new name
+			  in a nick change, the channel that was messaged in a channel
+			  message, the channel that was joined/parted from, etc.
+target_nick : The nickname part of target
+target_host : The hostname part of target
+channel     : The channel that was involved in the event if any. Usually
+              equivalent to target_nick
+other       : Identical to target_nick, but makes a little bit more sense
+              when responding to private messages
+text        : The text of the event. i.e. the contents of channel messages,
+              the quit/part message, etc.
+
+'.-'-. Events .-'-.'
+
+There are many types of events with names, and all others can be captured
+with their three digit numeric ID:
+
+class ExampleBot < MRIRC::IRC
+	def on_999(event)
+		print "Whoops, we're not supposed to be here"
+	end
+end
+
+The "special" events -- the ones you will use most often -- are:
+
+recv        : A raw receive event. Triggered for every line read from the server
+              with only one IRCEventData parameter set: text will be the raw
+              data
+send        : A raw send event. The text parameter will contain the full message
+              exactly as it was sent to the server.
+ping        : A server PING command
+ctcp        : A raw CTCP command, including the leading and trailing 0x01
+privmsg     : A raw PRIVMSG command, broken only into source, destination and
+              message
+message     : A parsed PRIVMSG command, someone saying something on a channel or
+              in a private message
+sendmessage : A PRIVMSG command triggered by the IRC library, source is the
+              instance's nick, destination is who the message was sent to and
+              text is the message
+action      : A parsed CTCP ACTION command; someone performing an action on a
+              channel or in a private message
+sendaction  : Triggered when you send an ACTION, the text data contains the
+              action text without CTCP markers
+notice      : A NOTICE command, note that by IRC standards these should never
+              be responded to in order to prevent infinite loops if responses
+              between bots.
+sendnotice  : Triggered when you send a NOTICE
+join        : Someone joined a channel, note that joining a channel also
+              triggers this event for yourself so remember to check the name of
+              the party joining.
+part        : Someone leaving a channel, also generated for our own part events
+nick        : Someone changed their nickname, source contains the old nick and
+              target is the new nick
+
+Numeric events with aliases:
+  001: welcome
+  002: yourhost
+  003: created
+  004: myinfo
+  231: serviceinfo
+  232: endofservices
+  233: service
+  234: servlist
+  235: servlistend
+  259: adminemail
+  305: unaway
+  306: nowaway
+  311: whoisuser
+  312: whoisserver
+  313: whoisoperator
+  314: whowasuser
+  315: endofwho
+  316: whoischanop
+  317: whoisidle
+  318: endofwhois
+  321: liststart
+  322: list
+  323: listend
+  324: channelmodeis
+  331: notopic
+  332: topic
+  351: version
+  352: whoreply
+  353: namreply
+  361: killdone
+  362: closing
+  363: closeend
+  364: links
+  365: endoflinks
+  366: endofnames
+  367: banlist
+  368: endofbanlist
+  369: endofwhowas
+  371: info
+  372: motd
+  373: infostart
+  374: endofinfo
+  375: motdstart
+  376: endofmotd
+  391: time
+  392: usersstart
+  393: users
+  394: endofusers
+  395: nousers
+  401: nosuchnick
+  402: nosuchserver
+  403: nosuchchannel
+  404: cannotsendtochan
+  405: toomanychannels
+  406: wasnosuchnick
+  407: toomanytargets
+  422: nomotd
+  433: nickinuse
+  442: notonchannel
+  451: notregistered
+  462: alreadyregistered
+  464: badpass
+  471: chanfull
+  472: unknownmode
+  473: inviteonlychan
+  474: bannedfromchan
+  475: badchannelkey
+  476: badchanmask
+
+'.-'-. Responses .-'-.'
+
+The IRC class has a number of built-in methods and attributes to help you
+utilize the IRC protocol easily. A complete list with descriptions follows:
+
+ATTRIBUTES
+nick          : This instance's current nickname. Note that assigning this
+                attribute is equivalent to the change_nick method
+realname      : This instance's display name for WHOIS queries. Note again
+                that assignment is equivalent to the user_info method
+hostname      : This instance's preferred host name. Usually ignored by
+                servers. Also assignable.
+channels      : An array of channels the current instance has joined.
+password      : The server password, usually only set with connect() but
+                assignable any time.
+irc_config,
+method_prefix : See the Options section
+
+METHODS
+connect(server, port = 6667, password = "")
+    Connects to an IRC server at the specified location. Password can
+    normally be left blank.
+	
+connected?()
+    Returns true if this instance is currently connected to an IRC server.
+	
+join(channel, key = "")
+	Attempts to join the channel 'channel', using the specified key if
+    necessary.
+	
+part(channel, reason = "")
+    Leaves the channel 'channel' with no message, or the message specified
+    in 'reason'.
+
+kick(channel, user, reason = "")
+    Attempts to kick the user with nickname 'user' from the channel 'channel'.
+    Fails (probably with an appropriate message from the server) if you don't
+    have operator priviledges on the specified channel.
+
+change_nick(newnick)
+    Attempts to change this instance's nickname. The change is not gauranteed,
+    e.g. the nickname may already be taken. The nick attribute will reflect the
+    new name only if the change goes through.
+
+user_info(hostname, realname)
+    Sets the instance's user info for whois queries. See the relevant
+    attributes above.
+
+mode(target, mode, user = "")
+    Attempts to change the mode for 'target' -- a user or channel -- setting it
+    to 'mode' -- e.g. "+m" -- or optionally a user on a channel if the third
+    parameter is specified.
+
+message(target, text)
+    Sends a standard "privmsg" to 'target' with the content 'text'. Target can
+    be a channel or nick name.
+
+notice(target, text)
+    Identicle to message, but sends a notice which by the IRC rfc cannot be
+    replied to. Useful for responding to bots to avoid a message loop.
+
+describe(target, text)
+    Sends a CTCP "action" to 'target', which can be a channel or nick name.
+    Equivalent to the /me command.
+
+message_all(text)
+notice_all(text)
+describe_all(text)
+    These functions are all equivalent to their plain counterparts, except that
+    they act upon all joined channels.
+
+quit(message = "")
+    Sends a QUIT message to the server, optionally with a reasoning message.
+
+disconnect()
+    Disconnects from the server, sending a QUIT request with the default
+    message "Client exited", then shuts down the socket completely.
+
+run()
+	Captures execution and doesn't return until the socket is disconnected.
+    Useful for simple bots.
+
+send_raw(out_str)
+	Sends a raw message to the IRC server. The only formatting performed is
+    ensuring that the message ends with a single set of \r\n.
+
+
+'.-'-. Options .-'-.'
+
+The IRC class has a few options that can be set to manipulate its functionality
+to a degree. A complete list with descriptiosn follows:
+
+IRC::irc_config
+    This instance variable is an object with the following attributes:
+	suppress_pong: If set to true, tells mrIRC not to respond to server PING
+	               events so you can handle them yourself. Default: false
+    ctcp_respond : If set to true mrIRC will automatically respond to standard
+	               CTCP events: PING, VERSION and TIME. Default: true
+    version      : The value sent in response to CTCP VERSION if ctcp_respond
+	               is set to true. Default: mrIRC - Minimalist Ruby IRC v*.*.*
+
+IRC::method_prefix
+    This instance variable sets the prefix used when searching for methods to
+    respond to IRC events. This string is prepended to the name or ID of the
+    event (see Events above) and then a method with a matching name is called
+    if it exists.
