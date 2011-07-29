@@ -27,18 +27,18 @@ Database[:knowledge] = Hash[Database[:knowledge].map { |k, v|
 
 class QuestionBot < MRIRC::IRC
 
-	#"welcome" (001) is the first message sent by the server to indicate that
-	#you're registered
-	def on_welcome(event)
-		join Database[:settings][:chan] #join the channel "#test"
-	end
-	
-	#the "join" event is triggered when the server sends a JOIN command, meaning
-	#this event is also triggered when we join a channel, so we check who joined
-	#and react appropriately
-	def on_join(event)
+  #"welcome" (001) is the first message sent by the server to indicate that
+  #you're registered
+  def on_welcome(event)
+    join Database[:settings][:chan] #join the channel "#test"
+  end
   
-	end
+  #the "join" event is triggered when the server sends a JOIN command, meaning
+  #this event is also triggered when we join a channel, so we check who joined
+  #and react appropriately
+  def on_join(event)
+  
+  end
   
   def on_message event
     if event.nick == event.channel
@@ -70,19 +70,19 @@ class QuestionBot < MRIRC::IRC
 end
 
 #register handlers to break the main loop
-trap("INT", proc { exit })
-trap("TERM", proc { exit })
+trap 'INT' do exit end
+trap 'TERM' do exit end
 
 bot = QuestionBot.new
 
 bot.nick = Database[:settings][:nick]
-bot.realname = "mrIRC github/fowlmouth/mrIRC"
+bot.realname = 'mrIRC github/fowlmouth/mrIRC'
 
 begin
-	bot.connect Database[:settings][:server]
-	bot.run #prevent the script from exiting until the connection is severed
+  bot.connect Database[:settings][:server]
+  bot.run #prevent the script from exiting until the connection is severed
 ensure
-	bot.disconnect #ensure that the script exits cleanly
+  bot.disconnect #ensure that the script exits cleanly
   
   begin
     #save the db

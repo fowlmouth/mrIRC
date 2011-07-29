@@ -18,22 +18,22 @@ class Example5 < MRIRC::IRC
      [],     {},             []
   end
   
-	#"welcome" (001) is the first message sent by the server to indicate that
-	#you're registered
-	def on_welcome(event)
-		join("#fowl") #join the channel "#test"
-	end
-	
-	#the "join" event is triggered when the server sends a JOIN command, meaning
-	#this event is also triggered when we join a channel, so we check who joined
-	#and react appropriately
-	def on_join(event)
-		if (event.nick == self.nick)
-			message(event.channel, "Hi guys!")
-		else
-			message(event.channel, "Hi #{event.nick}!")
-		end
-	end
+  #"welcome" (001) is the first message sent by the server to indicate that
+  #you're registered
+  def on_welcome(event)
+    join("#fowl") #join the channel "#test"
+  end
+  
+  #the "join" event is triggered when the server sends a JOIN command, meaning
+  #this event is also triggered when we join a channel, so we check who joined
+  #and react appropriately
+  def on_join(event)
+    if (event.nick == self.nick)
+      message(event.channel, "Hi guys!")
+    else
+      message(event.channel, "Hi #{event.nick}!")
+    end
+  end
   
   def on_message event
     if event.nick == event.channel
@@ -96,8 +96,8 @@ bot.message_match /banisterfiend/ do |event|
 end
 
 begin
-	bot.connect("irc.freenode.org")
-	bot.run #prevent the script from exiting until the connection is severed
+  bot.connect("irc.freenode.org")
+  bot.run #prevent the script from exiting until the connection is severed
 ensure
-	bot.disconnect #ensure that the script exits cleanly
+  bot.disconnect #ensure that the script exits cleanly
 end

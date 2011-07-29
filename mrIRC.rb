@@ -1,7 +1,7 @@
 require 'socket'
 
 module MRIRC
-	MRIRC_VERSION = "mrIRC - Minimalist Ruby IRC v0.2.4"
+	MRIRC_VERSION = "mrIRC - Minimalist Ruby IRC v0.2.4 https://github.com/fowlmouth/mrIRC"
 
 	class IRCEventData
 		attr_accessor :command, :numeric, :source, :source_nick, :source_host, :nick, :target, :target_nick, :target_host, :channel, :other, :text
@@ -128,9 +128,11 @@ module MRIRC
 			@_port = port
 			@password = password
 			@_socket = TCPSocket.new(server, port)
+      
 			send_raw("NICK #{@nick}")
 			send_raw("USER #{@nick} \"#{@hostname}\" \"#{@_server}\" : #{@realname}")
 			send_raw("PASS #{password}") if (password != "")
+      
 			@_thread = Thread.new {
 				@_socket.each_line { |line|
 					run_callback("recv", IRCEventData.new("", 0, "", "", line.chop))
@@ -294,6 +296,7 @@ module MRIRC
 		
 		private
 		def run_callback(name, data)
+      p "#{name} --- #{data.text}"
 			self.send("#{@method_prefix}#{name}".intern, data) if self.respond_to?("#{@method_prefix}#{name}".intern)
 		end
 	end
