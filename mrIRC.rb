@@ -184,7 +184,7 @@ module MRIRC
               run_callback($2.to_s, data)
               run_callback(IRC::ALIASES[$2.to_s], data) if (IRC::ALIASES[$2.to_s] != IRC::ALIASES.default)
           end
-          sleep(0.3)
+          sleep(0.03)
         }
       }
     end
