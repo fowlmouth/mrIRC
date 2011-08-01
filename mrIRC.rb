@@ -105,14 +105,14 @@ module MRIRC
     }
   
     attr_reader :nick, :irc_config, :realname, :hostname, :channels
-    attr_accessor :password, :method_prefix
+    attr_accessor :password, :method_prefix, :verbose
     
     def initialize options = {}
       @irc_config = IRCConfigData.new
       @method_prefix = options[:prefix] || 'on_'
       @nick = options[:nick] || 'mrBot'
       @realname = options[:realname] || 'mrIRC User'
-      @hostname = options[:hostname] || 'www.newmoongames.org'
+      @hostname = options[:hostname] || 'mrirc.rubyforge.com'
       @verbose = options[:verbose] || false
       @_thread = nil
       @_socket = nil
@@ -184,7 +184,7 @@ module MRIRC
               run_callback($2.to_s, data)
               run_callback(IRC::ALIASES[$2.to_s], data) if (IRC::ALIASES[$2.to_s] != IRC::ALIASES.default)
           end
-          sleep(0.01)
+          sleep(0.3)
         }
       }
     end
